@@ -1,0 +1,141 @@
+buildscript {
+    ext {
+        jib_version = '3.2.1'
+        springCloudVersion = '2021.0.1'
+        sonar_qube_version = '2.8'
+    }
+
+}
+
+plugins {
+    id "com.google.cloud.tools.jib" version "${jib_version}"
+    id 'org.springframework.boot' version '2.5.12'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'jacoco'
+    id "org.sonarqube" version "${sonar_qube_version}"
+}
+
+apply plugin: "idea"
+
+group 'com.lbg.rsk.frt.ingestion'
+version '1.0-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+configurations {
+    all*.exclude module: "spring-boot-starter-logging"
+    all*.exclude module: "logback-classic"
+    all*.exclude module: "logback-core"
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+jib {
+    to.image = "dmn01-rsk-frt-ingestion-service:v1"
+    allowInsecureRegistries = true
+    from.image = "eu.gcr.io/dmn01-rskcda-ide-10-11f3/rsk/rsk-cfl-dbt:v0.2.0"
+    container.user = "dbt"
+}
+
+repositories {
+    maven {
+        url = "https://nexus.mgmt-bld.oncp.dev/repository/confluent-proxy/"
+    }
+    maven {
+        url = "https://nexus.mgmt-bld.oncp.dev/repository/maven-public/"
+    }
+    maven {
+        url = "https://nexus.mgmt-bld.oncp.dev/repository/maven-central/"
+    }
+    maven {
+        url = "https://nexus.npactl.dmn01-bld.oncp.dev/repository/maven-releases/"
+    }
+    mavenLocal()
+}
+
+def flogger_version = '0.7.4'
+def junit_jupiter_version = '5.8.2'
+
+springBoot {
+    buildInfo()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.cloud:spring-cloud-gcp-starter-pubsub:1.2.7.RELEASE'
+    implementation 'org.springframework.integration:spring-integration-core:5.5.9'
+
+    implementation 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.12'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.apache.kafka:kafka-streams-test-utils'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_jupiter_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_jupiter_version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_jupiter_version}"
+    testImplementation "org.junit.vintage:junit-vintage-engine:${junit_jupiter_version}"
+
+    implementation "com.google.flogger:flogger:${flogger_version}"
+    implementation "com.google.flogger:flogger-system-backend:${flogger_version}"
+    implementation "com.google.flogger:flogger-slf4j-backend:${flogger_version}"
+
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
+
+    implementation 'com.google.cloud:google-cloud-bigquery:2.9.3'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+sonarqube {
+    properties {
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.exclusions", "**/pipelines/**,Jenkinsfile,**/gradle/**"
+        property "sonar.coverage.exclusions", ""
+        property 'sonar.coverage.jacoco.xmlReportPaths', "$projectDir/build/reports/jacoco/test/jacocoTestReport.xml"
+        property "sonar.junit.reportsPath", "$projectDir/build/test-results/test"
+        // ignore listed rules
+        property "sonar.issue.ignore.multicriteria","e1"
+        // Local-Variable Type Inference should be used (Declare this local variable with "var" instead., )
+        property "sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212"
+        property "sonar.issue.ignore.multicriteria.e1.resourceKey","**/*"
+    }
+}
+
+jacocoTestReport {
+    reports {
+        html.enabled true
+        xml.enabled true
+    }
+}
+
+
+test {
+    useJUnitPlatform()
+
+    jacoco {
+        destinationFile = file("build/jacoco/sonar.exec")
+    }
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nTest result: ${result.resultType}"
+            println "Test summary: ${result.testCount} tests, " +
+                    "${result.successfulTestCount} succeeded, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped"
+        }
+    }
+}

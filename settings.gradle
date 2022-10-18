@@ -1,0 +1,11 @@
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://nexus.mgmt-bld.oncp.dev/repository/maven-public/'
+        }
+        maven {
+            url 'https://nexus.npactl.dmn01-bld.oncp.dev/repository/maven-releases/'
+        }
+    }
+}
+rootProject.name = 'dmn01-rsk-frt-ingestion-Collateral'

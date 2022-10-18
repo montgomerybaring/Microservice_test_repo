@@ -1,0 +1,13 @@
+gcp:
+  projectId: "dmn01-rskcda-ide-10-11f3"
+  pubSub:
+    subscriptionName: "DBT-Trigger-sub"
+    errorTopicName: "DBT-Error-Topic"
+    validationTopicName: "DBT-Error-Topic"
+    notificationTriggerTopicName: "DBT-Error-Topic"
+  bqProjectID: "dmn01-rskcda-ide-10-11f3"
+  bqRawDataSetId: "TEST_BQ_RAW_DATASET"
+  bqSchemaDataSetId: "TEST_BQ_SCHEMA_DATASET"
+  bqOperationDataSetId: "TEST_BQ_OPERATION_DATASET"
+  bqMetaDataTableName: "BQ_VALIDATION_TABLE"
+  location: "US"

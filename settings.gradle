@@ -9,3 +9,5 @@ pluginManagement {
     }
 }
 rootProject.name = 'dmn01-rsk-frt-ingestion-Collateral'
+
+//test
